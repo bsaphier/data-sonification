@@ -1,6 +1,4 @@
 const initialState = {
-  disabled: true,
-  susresBtnText: 'Suspend context'
 };
 
 export default (state = initialState, action) => {
