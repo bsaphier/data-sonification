@@ -1,13 +1,13 @@
 import { connect } from 'react-redux';
 
 import App from '../components/App';
-import { fetchTrafficData } from '../actions';
+import { fetchTweets } from '../actions';
 
 const mapStateToProps = ({ mainReducer }) => ({ mainReducer });
 
 const mapDispatchToProps = dispatch => ({
-  fetchTrafficData: () =>
-    dispatch(fetchTrafficData())
+  fetchTweets: () =>
+    dispatch(fetchTweets())
 });
 
 export default connect(
