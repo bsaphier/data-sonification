@@ -1,7 +1,16 @@
 import { connect } from 'react-redux';
 
 import App from '../components/App';
+import { fetchTrafficData } from '../actions';
 
 const mapStateToProps = ({ mainReducer }) => ({ mainReducer });
 
-export default connect(mapStateToProps)(App);
+const mapDispatchToProps = dispatch => ({
+  fetchTrafficData: () =>
+    dispatch(fetchTrafficData())
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(App);

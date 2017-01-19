@@ -2,7 +2,7 @@
   "name": "Stackathon",
   "version": "1.0.0",
   "description": "test passing audioCtx through redux store",
-  "main": "server/start.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server/start",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,18 +10,20 @@
   "author": "me",
   "license": "ISC",
   "devDependencies": {
+    "axios": "^0.15.3",
     "babel-core": "^6.21.0",
     "babel-loader": "^6.2.10",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-react": "^6.16.0",
+    "babel-preset-stage-2": "^6.18.0",
     "express": "^4.14.0",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "react-redux": "^5.0.1",
     "redux": "^3.6.0",
+    "redux-thunk": "^2.2.0",
     "volleyball": "^1.4.1",
     "webpack": "^1.14.0"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
