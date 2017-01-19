@@ -14,27 +14,28 @@ const nodeModulesPath = path.join(rootPath, 'node_modules');
 
 server.on('request', app);
 
+// -~-~-~-~-~-~-~- listen to twitter stream -~-~-~-~-~-~-~- \\
 const io = socketio(server);
+const twitterClient = new Twitter(require('../twitter.config'));
 
 io.on('connection', socket => {
-  //receives the newly connected socket
-  //called for each browser that connects to our server
-  console.log('A new client has connected');
   console.log('socket id: ', socket.id);
 
-  socket.on('tweet', tweet =>
-    console.log('I finally got a tweet!', tweet)
-  );
+  twitterClient.on('tweet', tweet => socket.emit('tweet', tweet.text));
+
+  twitterClient.on('error', err => console.log('Ohhh noooo, an errrrer', err));
+
+  twitterClient.track('trump');
 });
 
 
-// ~~~~~ tell the server where to listen ~~~~~ \\
+// -~-~-~-~-~- tell the server where to listen -~-~-~-~-~- \\
 app.set('port', (process.env.PORT || 1337));
 
-// ~~~~~ logging middleware ~~~~~ \\
+// -~-~-~-~-~-~-~-~- logging middleware -~-~-~-~-~-~-~-~- \\
 app.use(volleyball);
 
-// ~~~~~ serve static assets ~~~~~ \\
+// -~-~-~-~-~-~-~-~- serve static assets -~-~-~-~-~-~-~-~- \\
 app.use(express.static(rootPath));
 app.use(express.static(publicPath));
 app.use(express.static(nodeModulesPath));
@@ -47,17 +48,3 @@ app.get('/', (req, res, next) => {
 server.listen(app.get('port'), () => {
   console.log(`server listening on port ${app.get('port')}`);
 });
-
-
-// -~-~-~-~-~-~-~-~-~-~- twitter stuffs -~-~-~-~-~-~-~-~-~-~- \\
-
-const twitterConfig = require('../twitter.config');
-const twitterClient = new Twitter(twitterConfig);
-
-
-twitterClient.on('tweet', tweet => io.emit('tweet', tweet));
-
-twitterClient.on('error', err => console.log('Ohhh noooo, an errrrer', err));
-
-twitterClient.track('socket.io');
-twitterClient.track('javascript');
