@@ -30,6 +30,12 @@ io.on('connection', socket => {
   twitter.on('tweet', tweet => socket.emit('tweet', tweet));
   twitter.on('error', err => console.log('Ohhh noooo, an errrrrrr', err));
 
+  // * TWEET RESPONSE -- use it like after-touch -- * \\
+  socket.on('response', () => {
+    console.log('********* received the in the BACK! ********');
+    socket.emit('tweetResponse');
+  });
+
   // * KILL SWITCH * \\
   socket.on('abort', () => twitter.abort());
 });

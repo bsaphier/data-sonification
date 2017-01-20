@@ -1,4 +1,5 @@
 import { connect } from 'react-redux';
+import { audioActionCreators } from 'react-redux-webaudio';
 
 import App from '../components/App';
 import {
@@ -7,18 +8,24 @@ import {
   fetchTweets
 } from '../actions';
 
-const mapStateToProps = ({ streamReducer, dataReducer }) => ({
+const { createGlobalAudioContext } = audioActionCreators;
+
+const mapStateToProps = ({ streamReducer, dataReducer, audioContextProvider }) => ({
   dataReducer,
-  streamReducer
+  streamReducer,
+  audioContextProvider
 });
 
 const mapDispatchToProps = dispatch => ({
 
   killStream: () => dispatch(killStream()),
 
-  fetchTweets: () => dispatch(fetchTweets()),
+  fetchTweets: (audioContextAndGraph) =>
+    dispatch(fetchTweets(audioContextAndGraph)),
 
-  onConnect: () => dispatch(onConnect())
+  onConnect: () => dispatch(onConnect()),
+
+  createAudioCtx: () => dispatch(createGlobalAudioContext())
 });
 
 export default connect(

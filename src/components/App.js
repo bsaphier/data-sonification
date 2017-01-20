@@ -4,14 +4,10 @@ const App = ({
   onConnect,
   killStream,
   fetchTweets,
-  dataReducer: {
-    locations
-  },
-  streamReducer: {
-    tweet,
-    title,
-    connected
-  }
+  createAudioCtx,
+  audioContextProvider,
+  streamReducer: { title },
+  dataReducer: { locations }
 }) => {
   // const tweetProps = Object.keys(tweet);
   // const tweetData = connected ? tweetProps.map((prop, idx) => (
@@ -30,7 +26,10 @@ const App = ({
   return (
     <div id="outer-container">
       <h1>{ title }</h1>
-      <button type="button" onClick={() => fetchTweets()}>
+      <button type="button" onClick={createAudioCtx}>
+        Initialize Audio Context (only click once!!!!!!)
+      </button>
+      <button type="button" onClick={() => fetchTweets(audioContextProvider.audioContextAndGraph)}>
         Fetch Data
       </button>
       <button type="button" onClick={() => killStream()}>
