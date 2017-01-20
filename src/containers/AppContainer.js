@@ -1,13 +1,24 @@
 import { connect } from 'react-redux';
 
 import App from '../components/App';
-import { fetchTweets } from '../actions';
+import {
+  onConnect,
+  killStream,
+  fetchTweets
+} from '../actions';
 
-const mapStateToProps = ({ mainReducer }) => ({ mainReducer });
+const mapStateToProps = ({ streamReducer, dataReducer }) => ({
+  dataReducer,
+  streamReducer
+});
 
 const mapDispatchToProps = dispatch => ({
-  fetchTweets: () =>
-    dispatch(fetchTweets())
+
+  killStream: () => dispatch(killStream()),
+
+  fetchTweets: () => dispatch(fetchTweets()),
+
+  onConnect: () => dispatch(onConnect())
 });
 
 export default connect(

@@ -3,7 +3,7 @@ const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
 const volleyball = require('volleyball');
-const Twitter = require('node-tweet-stream');
+const TweetStream = require('node-tweet-stream');
 
 const app = express();
 const server = http.createServer();
@@ -13,24 +13,25 @@ const publicPath = path.join(rootPath, 'public');
 const nodeModulesPath = path.join(rootPath, 'node_modules');
 
 server.on('request', app);
+app.set('port', (process.env.PORT || 1337));
 
 
 // -~-~-~-~-~-~-~-~-~-~- LISTEN TO A TWITTER STREAM -~-~-~-~-~-~-~-~-~-~- \\
 const io = socketio(server);
-const twitterClient = new Twitter(require('../twitter.config'));
+const twitter = new TweetStream(require('../twitter.config'));
 
 io.on('connection', socket => {
 
-  twitterClient.on('tweet', tweet =>
-    socket.emit('tweet', tweet.text)
-  );
+  // * SEARCH PARAMS TWITTER STREAM TO LISTEN FOR * \\
+  // ~-~-~ this location is NYC ~-~-~ \\
+  twitter.location('-74,40,-73,41');
 
-  twitterClient.on('error', err =>
-    console.log('Ohhh noooo, an errrrrrr', err)
-  );
+  // * EVENT LISTENERS * \\
+  twitter.on('tweet', tweet => socket.emit('tweet', tweet));
+  twitter.on('error', err => console.log('Ohhh noooo, an errrrrrr', err));
 
-  // * THE KEYWORD FOR THE TWITTER STREAM TO LISTEN FOR * \\
-  twitterClient.track('javascript');
+  // * KILL SWITCH * \\
+  socket.on('abort', () => twitter.abort());
 });
 
 
@@ -43,13 +44,12 @@ app.use(express.static(publicPath));
 app.use(express.static(nodeModulesPath));
 
 
-// -~-~-~-~-~-~-~-~-~-~-~-~-~ START THE SERVER ~-~-~-~-~-~-~-~-~-~-~-~-~- \\
-app.set('port', (process.env.PORT || 1337));
-
+// -~-~-~-~-~-~-~-~-~-~-~-~-~-~ SERVE IT UP ~-~-~-~-~-~-~-~-~-~-~-~-~-~- \\
 app.get('/', (req, res, next) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
+// -~-~-~-~-~-~-~-~-~-~-~-~-~ START THE SERVER ~-~-~-~-~-~-~-~-~-~-~-~-~- \\
 server.listen(app.get('port'), () => {
   console.log(`server listening on port ${app.get('port')}`);
 });

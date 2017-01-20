@@ -1,7 +1,9 @@
 import { combineReducers } from 'redux';
 
-import mainReducer from './main-reducer';
+import dataReducer from './data-reducer';
+import streamReducer from './stream-reducer';
 
 export default combineReducers({
-  mainReducer
+  dataReducer,
+  streamReducer
 });

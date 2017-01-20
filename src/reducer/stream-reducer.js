@@ -1,18 +1,31 @@
 import {
+  CONNECTED,
+  ABORT_STREAM,
   RECEIVE_TWEET
 } from '../constants';
 
 const initialState = {
+  connected: false,
   title: 'Check these tweets, yo!',
   tweet: false
 };
 
 // --------------------> REDUCER <--------------------
-const mainReducer = (state = initialState, action) => {
+const streamReducer = (state = initialState, action) => {
 
   const nextState = Object.assign({}, state);
 
   switch (action.type) {
+    case CONNECTED:
+      console.log('connected to twitter socket');
+      nextState.connected = true;
+      return nextState;
+
+    case ABORT_STREAM:
+      nextState.tweet = false;
+      nextState.connected = false;
+      return nextState;
+
     case RECEIVE_TWEET:
       nextState.tweet = action.tweet;
       return nextState;
@@ -22,4 +35,4 @@ const mainReducer = (state = initialState, action) => {
   }
 };
 
-export default mainReducer;
+export default streamReducer;
