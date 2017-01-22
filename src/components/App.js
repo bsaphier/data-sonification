@@ -20,14 +20,20 @@ const App = ({
     )
   );
 
-  if (!audioContextAndGraph.context) didConnect();
+  if (!connected && !audioContextAndGraph.context) didConnect();
 
   return (
     <div id="outer-container">
-      <button type="button" onClick={() => openStream(audioContextAndGraph)}>
+      <button
+        type="button"
+        onClick={() => openStream(audioContextAndGraph)}
+      >
         Strart Stream
       </button>
-      <button type="button" onClick={killStream}>
+      <button
+        type="button"
+        onClick={killStream}
+      >
         Stop Stream
       </button>
       <div>

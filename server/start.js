@@ -10,6 +10,7 @@ const app = express();
 const server = http.createServer();
 
 const rootPath = path.join(__dirname, '..');
+const binPath = path.join(rootPath, 'bin');
 const publicPath = path.join(rootPath, 'public');
 const nodeModulesPath = path.join(rootPath, 'node_modules');
 
@@ -29,44 +30,68 @@ io.on('connection', socket => {
 
   // ------------------> APP EVENT LISTENERS <------------------ \\
   socket.on('didConnect', () => {
-    console.log('******* CONNECTED *******');
+    console.log(chalk.inverse.dim.green('*******'), chalk.green(' CONNECTED '), chalk.inverse.dim.green('*******'));
     socket.emit('didConnectResponse');
   });
 
+  socket.on('abort', () => {
+    twitter.abort();
+    console.log(chalk.red('*-~STREAM-KILLED-&-AUDIO-CONTEXT-CLOSED~-*'));
+  });
+
   socket.on('fetchTweets', () => {
-    // * TWITTER EVENT LISTENERS * \\
     twitter.on('tweet', tweet => {
-      console.log(chalk.blue('*---> TWEET RECEIVED <---*'));
-      socket.emit('tweet', tweet);
+      const { name } = tweet.place;
+      // const { followers_count } = tweet.user;
+
+      switch (name) {
+        case 'Bronx':
+          console.log(chalk.green('<-~-~B-~R-~O-~N-~X-*'));
+          socket.emit('bronx', tweet);
+          break;
+        case 'Queens':
+          console.log(chalk.magenta('<-~-~Q-~U-~E-~E-~N-~S-*'));
+          socket.emit('queens', tweet);
+          break;
+        case 'Brooklyn':
+          console.log(chalk.yellow('<-~-~B-~R-~O-~O-~K-~L-~Y-~N-*'));
+          socket.emit('brooklyn', tweet);
+          break;
+        case 'Manhattan':
+          console.log(chalk.cyan('<-~-~M-~A-~N-~H-~A-~T-~T-~A-~N-*'));
+          socket.emit('manhattan', tweet);
+          break;
+        default:
+          console.log(chalk.gray('<-~-~O-~T-~H-~E-~R-*'));
+      }
     });
     twitter.on('error', err =>
-      console.log('Ohhh noooo, an errrrrrr', err)
+      console.log(chalk.bold.red('*!~!~!- errerrr -!~!~!*'), err)
     );
   });
 
-  socket.on('tweetResponse', () => {
-    console.log(chalk.dim.blue('<---* SENT RESPONSE *--->'));
-    socket.emit('responseReceived');
+  socket.on('tweetResponse', location => {
+    switch (location) {
+      case 'bronx':
+        console.log(chalk.dim.green('*~B-~R-~O-~N-~X-~-~>'));
+        socket.emit('bronxResponse');
+        break;
+      case 'queens':
+        console.log(chalk.dim.magenta('*~Q-~U-~E-~E-~N-~S-~-~>'));
+        socket.emit('queensResponse');
+        break;
+      case 'brooklyn':
+        console.log(chalk.dim.yellow('*~B-~R-~O-~O-~K-~L-~Y-~N-~-~>'));
+        socket.emit('brooklynResponse');
+        break;
+      case 'manhattan':
+        console.log(chalk.dim.cyan('*~M-~A-~N-~H-~A-~T-~T-~A-~N-~-~>'));
+        socket.emit('manhattanResponse');
+        break;
+      default:
+        console.log(chalk.bold.red('*~W-~T-~F-*'));
+    }
   });
-
-  socket.on('manhattan', () => {
-    console.log(chalk.cyan('*-~M-~A-~N-~H-~A-~T-~T-~A-~N-~*'));
-  });
-
-  socket.on('brooklyn', () => {
-    console.log(chalk.yellow('*-~B-~R-~O-~O-~K-~L-~Y-~N-~*'));
-  });
-
-  socket.on('bronx', () => {
-    console.log(chalk.green('*-~B-~R-~O-~N-~X-~*'));
-  });
-
-  socket.on('queens', () => {
-    console.log(chalk.magenta('*-~Q-~U-~E-~E-~N-~S-~*'));
-  });
-
-  // * KILL SWITCH * \\
-  socket.on('abort', () => twitter.abort());
 });
 
 
