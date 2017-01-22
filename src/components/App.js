@@ -1,41 +1,37 @@
 import React from 'react';
 
 const App = ({
-  onConnect,
   killStream,
+  didConnect,
   fetchTweets,
-  createAudioCtx,
-  audioContextProvider,
-  streamReducer: { title },
-  dataReducer: { locations }
+  streamReducer: { connected },
+  dataReducer: { locations },
+  audioContextProvider: { audioContextAndGraph }
 }) => {
-  // const tweetProps = Object.keys(tweet);
-  // const tweetData = connected ? tweetProps.map((prop, idx) => (
-  //   <div key={tweet.id + String(idx)}>
-  //     <p>{`${prop}: ${tweet[prop]}`}</p>
-  //   </div>
-  // )) : onConnect() && null;
 
   const places = Object.keys(locations);
-  const locationCounters = places.map(place => (
-    <div key={place}>
-      <p>{`${place}: ${locations[place]}`}</p>
-    </div>
-  ));
+
+  const locationCounters = places.map(
+    place => (
+      <div key={place}>
+        <p>{`${place}: ${locations[place]}`}</p>
+      </div>
+    )
+  );
+
+  if (!audioContextAndGraph.context) didConnect();
 
   return (
     <div id="outer-container">
-      <h1>{ title }</h1>
-      <button type="button" onClick={createAudioCtx}>
-        Initialize Audio Context (only click once!!!!!!)
+      <button type="button" onClick={() => fetchTweets(audioContextAndGraph)}>
+        Strart Stream
       </button>
-      <button type="button" onClick={() => fetchTweets(audioContextProvider.audioContextAndGraph)}>
-        Fetch Data
+      <button type="button" onClick={killStream}>
+        Stop Stream
       </button>
-      <button type="button" onClick={() => killStream()}>
-        Stop Data Stream
-      </button>
-      { locationCounters }
+      <div>
+        { locationCounters }
+      </div>
     </div>
   );
 };

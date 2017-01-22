@@ -21,20 +21,19 @@ const io = socketio(server);
 const twitter = new TweetStream(require('../twitter.config'));
 
 io.on('connection', socket => {
-
   // * SEARCH PARAMS TWITTER STREAM TO LISTEN FOR * \\
   // ~-~-~ this location is NYC ~-~-~ \\
   twitter.location('-74,40,-73,41');
 
-  // * EVENT LISTENERS * \\
+  // * TWITTER EVENT LISTENERS * \\
   twitter.on('tweet', tweet => socket.emit('tweet', tweet));
   twitter.on('error', err => console.log('Ohhh noooo, an errrrrrr', err));
 
+  // * APP EVENT LISTENERS * \\
+  // socket.on('didconnect', () => socket.emit('connectResponse'));
+
   // * TWEET RESPONSE -- use it like after-touch -- * \\
-  socket.on('response', () => {
-    console.log('********* received the in the BACK! ********');
-    socket.emit('tweetResponse');
-  });
+  socket.on('response', () => socket.emit('tweetResponse'));
 
   // * KILL SWITCH * \\
   socket.on('abort', () => twitter.abort());

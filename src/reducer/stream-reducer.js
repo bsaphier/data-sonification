@@ -6,7 +6,6 @@ import {
 
 const initialState = {
   connected: false,
-  title: 'Check these tweets, yo!',
   tweet: false
 };
 
@@ -17,7 +16,6 @@ const streamReducer = (state = initialState, action) => {
 
   switch (action.type) {
     case CONNECTED:
-      console.log('connected to twitter socket');
       nextState.connected = true;
       return nextState;
 

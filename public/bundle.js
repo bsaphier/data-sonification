@@ -27046,7 +27046,6 @@
 	
 	var initialState = {
 	  connected: false,
-	  title: 'Check these tweets, yo!',
 	  tweet: false
 	};
 	
@@ -27060,7 +27059,6 @@
 	
 	  switch (action.type) {
 	    case _constants.CONNECTED:
-	      console.log('connected to twitter socket');
 	      nextState.connected = true;
 	      return nextState;
 	
@@ -27102,8 +27100,18 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	var createGlobalAudioContext = _reactReduxWebaudio.audioActionCreators.createGlobalAudioContext;
+	/* globals io */
+	var setParam = _reactReduxWebaudio.audioActionCreators.setParam,
+	    createGain = _reactReduxWebaudio.audioActionCreators.createGain,
+	    oscillatorStart = _reactReduxWebaudio.audioActionCreators.oscillatorStart,
+	    createOscillator = _reactReduxWebaudio.audioActionCreators.createOscillator,
+	    connectAudioNodes = _reactReduxWebaudio.audioActionCreators.connectAudioNodes,
+	    closeAudioContext = _reactReduxWebaudio.audioActionCreators.closeAudioContext,
+	    createBiquadFilter = _reactReduxWebaudio.audioActionCreators.createBiquadFilter,
+	    linearRampToValueAtTime = _reactReduxWebaudio.audioActionCreators.linearRampToValueAtTime,
+	    createGlobalAudioContext = _reactReduxWebaudio.audioActionCreators.createGlobalAudioContext;
 	
+	var socket = io(window.location.origin);
 	
 	var mapStateToProps = function mapStateToProps(_ref) {
 	  var streamReducer = _ref.streamReducer,
@@ -27119,21 +27127,57 @@
 	var mapDispatchToProps = function mapDispatchToProps(dispatch) {
 	  return {
 	
+	    didConnect: function didConnect() {
+	      dispatch(createGlobalAudioContext());
+	
+	      socket.on('connect', function () {
+	        dispatch((0, _actions.socketConnected)());
+	        console.log('******* CONNECTED *******');
+	      });
+	    },
+	
 	    killStream: function killStream() {
-	      return dispatch((0, _actions.killStream)());
+	
+	      socket.emit('abort');
+	      dispatch((0, _actions.abort)());
+	      dispatch(closeAudioContext());
 	    },
 	
-	    fetchTweets: function fetchTweets(audioContextAndGraph) {
-	      return dispatch((0, _actions.fetchTweets)(audioContextAndGraph));
-	    },
+	    fetchTweets: function fetchTweets(_ref2) {
+	      var context = _ref2.context;
 	
-	    onConnect: function onConnect() {
-	      return dispatch((0, _actions.onConnect)());
-	    },
 	
-	    createAudioCtx: function createAudioCtx() {
-	      return dispatch(createGlobalAudioContext());
+	      // dispatch(createGain('lfoGain'));
+	      // dispatch(createOscillator('lfo'));
+	      dispatch(createOscillator('vco'));
+	      dispatch(createBiquadFilter('vcf'));
+	      dispatch(createGain('output'));
+	
+	      dispatch(connectAudioNodes('vco', 'vcf'));
+	      dispatch(connectAudioNodes('vcf', 'output'));
+	      // dispatch(connectAudioNodes('lfo', 'lfoGain'));
+	
+	      dispatch(setParam('output.gain.value', 0));
+	      dispatch(setParam('vco.type', 'sawtooth'));
+	      // dispatch(setParam('lfo.type', 'sawtooth'));
+	
+	      dispatch(oscillatorStart('vco', 0));
+	
+	      dispatch(connectAudioNodes('output'));
+	
+	      socket.on('tweet', function (tweet) {
+	        dispatch(linearRampToValueAtTime('output.gain', 0.8, context.currentTime + 0.2));
+	        dispatch((0, _actions.countPlace)(tweet.place.name));
+	        dispatch((0, _actions.recieveTweet)(tweet));
+	        socket.emit('response');
+	      });
+	
+	      socket.on('tweetResponse', function () {
+	        console.log('******* TWEET RESPONSE *******');
+	        dispatch(linearRampToValueAtTime('output.gain', 0.0, context.currentTime + 1.1));
+	      });
 	    }
+	
 	  };
 	};
 	
@@ -27156,22 +27200,16 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	var App = function App(_ref) {
-	  var onConnect = _ref.onConnect,
-	      killStream = _ref.killStream,
+	  var killStream = _ref.killStream,
+	      didConnect = _ref.didConnect,
 	      fetchTweets = _ref.fetchTweets,
-	      createAudioCtx = _ref.createAudioCtx,
-	      audioContextProvider = _ref.audioContextProvider,
-	      title = _ref.streamReducer.title,
-	      locations = _ref.dataReducer.locations;
+	      connected = _ref.streamReducer.connected,
+	      locations = _ref.dataReducer.locations,
+	      audioContextAndGraph = _ref.audioContextProvider.audioContextAndGraph;
 	
-	  // const tweetProps = Object.keys(tweet);
-	  // const tweetData = connected ? tweetProps.map((prop, idx) => (
-	  //   <div key={tweet.id + String(idx)}>
-	  //     <p>{`${prop}: ${tweet[prop]}`}</p>
-	  //   </div>
-	  // )) : onConnect() && null;
 	
 	  var places = Object.keys(locations);
+	
 	  var locationCounters = places.map(function (place) {
 	    return _react2.default.createElement(
 	      "div",
@@ -27184,34 +27222,28 @@
 	    );
 	  });
 	
+	  if (!audioContextAndGraph.context) didConnect();
+	
 	  return _react2.default.createElement(
 	    "div",
 	    { id: "outer-container" },
 	    _react2.default.createElement(
-	      "h1",
+	      "button",
+	      { type: "button", onClick: function onClick() {
+	          return fetchTweets(audioContextAndGraph);
+	        } },
+	      "Strart Stream"
+	    ),
+	    _react2.default.createElement(
+	      "button",
+	      { type: "button", onClick: killStream },
+	      "Stop Stream"
+	    ),
+	    _react2.default.createElement(
+	      "div",
 	      null,
-	      title
-	    ),
-	    _react2.default.createElement(
-	      "button",
-	      { type: "button", onClick: createAudioCtx },
-	      "Initialize Audio Context (only click once!!!!!!)"
-	    ),
-	    _react2.default.createElement(
-	      "button",
-	      { type: "button", onClick: function onClick() {
-	          return fetchTweets(audioContextProvider.audioContextAndGraph);
-	        } },
-	      "Fetch Data"
-	    ),
-	    _react2.default.createElement(
-	      "button",
-	      { type: "button", onClick: function onClick() {
-	          return killStream();
-	        } },
-	      "Stop Data Stream"
-	    ),
-	    locationCounters
+	      locationCounters
+	    )
 	  );
 	};
 	
@@ -27226,30 +27258,25 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.killStream = exports.onConnect = exports.fetchTweets = exports.countPlace = exports.abort = exports.socketConnected = exports.recieveTweet = undefined;
+	exports.abort = exports.socketConnected = exports.countPlace = exports.recieveTweet = undefined;
 	
 	var _reactReduxWebaudio = __webpack_require__(225);
 	
 	var _constants = __webpack_require__(232);
 	
-	/* globals io */
-	var socket = io(window.location.origin);
-	var setParam = _reactReduxWebaudio.audioActionCreators.setParam,
-	    createGain = _reactReduxWebaudio.audioActionCreators.createGain,
-	    setValueAtTime = _reactReduxWebaudio.audioActionCreators.setValueAtTime,
-	    oscillatorStart = _reactReduxWebaudio.audioActionCreators.oscillatorStart,
-	    createOscillator = _reactReduxWebaudio.audioActionCreators.createOscillator,
-	    connectAudioNodes = _reactReduxWebaudio.audioActionCreators.connectAudioNodes,
-	    connectNodeToParam = _reactReduxWebaudio.audioActionCreators.connectNodeToParam,
-	    createBiquadFilter = _reactReduxWebaudio.audioActionCreators.createBiquadFilter,
-	    linearRampToValueAtTime = _reactReduxWebaudio.audioActionCreators.linearRampToValueAtTime;
-	
 	// ----------------> ACTION CREATORS <----------------
-	
+	/* globals io */
 	var recieveTweet = exports.recieveTweet = function recieveTweet(tweet) {
 	  return {
 	    type: _constants.RECEIVE_TWEET,
 	    tweet: tweet
+	  };
+	};
+	
+	var countPlace = exports.countPlace = function countPlace(place) {
+	  return {
+	    type: _constants.COUNT,
+	    place: place
 	  };
 	};
 	
@@ -27265,73 +27292,7 @@
 	  };
 	};
 	
-	var countPlace = exports.countPlace = function countPlace(place) {
-	  return {
-	    type: _constants.COUNT,
-	    place: place
-	  };
-	};
-	
 	// --------------------> THUNKS <--------------------
-	var fetchTweets = exports.fetchTweets = function fetchTweets(_ref) {
-	  var context = _ref.context,
-	      audioNodes = _ref.audioNodes;
-	  return function (dispatch) {
-	    // create some audio nodes
-	    dispatch(createGain('lfoGain'));
-	    dispatch(createOscillator('lfo'));
-	    dispatch(createOscillator('vco'));
-	    dispatch(createBiquadFilter('vcf'));
-	    dispatch(createGain('output'));
-	
-	    // connect the nodes
-	    dispatch(connectAudioNodes('vco', 'vcf'));
-	    dispatch(connectAudioNodes('vcf', 'output'));
-	    dispatch(connectAudioNodes('lfo', 'lfoGain'));
-	    dispatch(connectNodeToParam('lfoGain', audioNodes.vcf.frequency));
-	
-	    dispatch(setParam('output.gain.value', 0.0));
-	    dispatch(setParam('vco.type', 'sawtooth'));
-	    dispatch(setParam('lfo.type', 'sawtooth'));
-	
-	    dispatch(setParam('vco.frequency', 110));
-	    dispatch(setParam('lfo.frequency', 3));
-	    dispatch(setParam('lfoGain.gain', 100));
-	    dispatch(setParam('vcf.Q', 50));
-	
-	    dispatch(oscillatorStart('vco', context.currentTime));
-	    dispatch(oscillatorStart('lfo', context.currentTime));
-	
-	    dispatch(connectAudioNodes('output'));
-	
-	    //listen for tweets
-	    socket.on('tweet', function (tweet) {
-	      dispatch(linearRampToValueAtTime('output.gain', 0.7, context.currentTime + 0.1));
-	      dispatch(countPlace(tweet.place.name));
-	      dispatch(recieveTweet(tweet));
-	      socket.emit('response');
-	    });
-	
-	    socket.on('tweetResponse', function () {
-	      dispatch(linearRampToValueAtTime('output.gain', 0.0, context.currentTime + 0.1));
-	    });
-	  };
-	};
-	
-	var onConnect = exports.onConnect = function onConnect() {
-	  return function (dispatch) {
-	    return socket.on('connect', function () {
-	      return dispatch(socketConnected());
-	    });
-	  };
-	};
-	
-	var killStream = exports.killStream = function killStream() {
-	  return function (dispatch) {
-	    dispatch(abort());
-	    socket.emit('abort');
-	  };
-	};
 
 /***/ }
 /******/ ]);
