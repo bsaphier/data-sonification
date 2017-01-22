@@ -27101,8 +27101,10 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	/* globals io */
+	/* eslint-disable camelcase */
 	var setParam = _reactReduxWebaudio.audioActionCreators.setParam,
 	    createGain = _reactReduxWebaudio.audioActionCreators.createGain,
+	    setValueAtTime = _reactReduxWebaudio.audioActionCreators.setValueAtTime,
 	    oscillatorStart = _reactReduxWebaudio.audioActionCreators.oscillatorStart,
 	    createOscillator = _reactReduxWebaudio.audioActionCreators.createOscillator,
 	    connectAudioNodes = _reactReduxWebaudio.audioActionCreators.connectAudioNodes,
@@ -27110,6 +27112,7 @@
 	    createBiquadFilter = _reactReduxWebaudio.audioActionCreators.createBiquadFilter,
 	    linearRampToValueAtTime = _reactReduxWebaudio.audioActionCreators.linearRampToValueAtTime,
 	    createGlobalAudioContext = _reactReduxWebaudio.audioActionCreators.createGlobalAudioContext;
+	
 	
 	var socket = io(window.location.origin);
 	
@@ -27131,8 +27134,92 @@
 	      dispatch(createGlobalAudioContext());
 	
 	      socket.on('connect', function () {
+	
 	        dispatch((0, _actions.socketConnected)());
-	        console.log('******* CONNECTED *******');
+	        socket.emit('didConnect');
+	      });
+	
+	      socket.on('didConnectResponse', function () {
+	
+	        dispatch(createOscillator('vco1'));
+	        dispatch(createOscillator('vco2'));
+	        // dispatch(createBiquadFilter('vcf1'));
+	        // dispatch(createBiquadFilter('vcf2'));
+	        dispatch(createGain('gain1'));
+	        dispatch(createGain('gain2'));
+	
+	        // dispatch(connectAudioNodes('vco1', 'vcf1'));
+	        // dispatch(connectAudioNodes('vco2', 'vcf2'));
+	        dispatch(connectAudioNodes('vco1', 'gain1'));
+	        dispatch(connectAudioNodes('vco2', 'gain2'));
+	
+	        dispatch(setParam('vco1.type', 'sawtooth'));
+	        dispatch(setParam('vco1.frequency.value', 41));
+	        dispatch(setParam('gain1.gain.value', 0));
+	        dispatch(connectAudioNodes('gain1'));
+	
+	        dispatch(setParam('vco2.type', 'sine'));
+	        dispatch(setParam('vco2.frequency.value', 220));
+	        dispatch(setParam('gain2.gain.value', 0));
+	        dispatch(connectAudioNodes('gain2'));
+	
+	        // dispatch(setParam('vcf1.type', 'lowpass'));
+	
+	        dispatch(oscillatorStart('vco1', 0));
+	        dispatch(oscillatorStart('vco2', 0));
+	      });
+	    },
+	
+	    openStream: function openStream(_ref2) {
+	      var context = _ref2.context;
+	
+	
+	      socket.emit('fetchTweets');
+	
+	      socket.on('tweet', function (tweet) {
+	        var followers_count = tweet.user.followers_count;
+	        var name = tweet.place.name;
+	
+	
+	        dispatch((0, _actions.countPlace)(name));
+	        dispatch((0, _actions.recieveTweet)(tweet));
+	
+	        switch (name) {
+	          case 'Manhattan':
+	            dispatch(linearRampToValueAtTime('gain1.gain', 0.3, context.currentTime + 0.05));
+	            socket.emit('manhattan');
+	            break;
+	          case 'Brooklyn':
+	            dispatch(linearRampToValueAtTime('gain2.gain', 0.5, context.currentTime + 0.05));
+	            socket.emit('brooklyn');
+	            break;
+	          case 'Bronx':
+	            socket.emit('Bronx');
+	            break;
+	          case 'Queens':
+	            socket.emit('queens');
+	            break;
+	          default:
+	            break;
+	        }
+	        // switch (true) {
+	        //   case (followers_count <= 500):
+	        //     // dispatch(setParam('vcf1.frequency.value', 200));
+	        //     socket.emit('fewFollowers');
+	        //     break;
+	        //   case (followers_count > 1000):
+	        //     // dispatch(setParam('vcf1.frequency.value', 2000));
+	        //     socket.emit('manyFollowers');
+	        //     break;
+	        //   default:
+	        //     break;
+	        // }
+	        socket.emit('tweetResponse');
+	      });
+	
+	      socket.on('responseReceived', function () {
+	        dispatch(linearRampToValueAtTime('gain1.gain', 0.0, context.currentTime + 0.1));
+	        dispatch(linearRampToValueAtTime('gain2.gain', 0.0, context.currentTime + 0.1));
 	      });
 	    },
 	
@@ -27141,43 +27228,7 @@
 	      socket.emit('abort');
 	      dispatch((0, _actions.abort)());
 	      dispatch(closeAudioContext());
-	    },
-	
-	    fetchTweets: function fetchTweets(_ref2) {
-	      var context = _ref2.context;
-	
-	
-	      // dispatch(createGain('lfoGain'));
-	      // dispatch(createOscillator('lfo'));
-	      dispatch(createOscillator('vco'));
-	      dispatch(createBiquadFilter('vcf'));
-	      dispatch(createGain('output'));
-	
-	      dispatch(connectAudioNodes('vco', 'vcf'));
-	      dispatch(connectAudioNodes('vcf', 'output'));
-	      // dispatch(connectAudioNodes('lfo', 'lfoGain'));
-	
-	      dispatch(setParam('output.gain.value', 0));
-	      dispatch(setParam('vco.type', 'sawtooth'));
-	      // dispatch(setParam('lfo.type', 'sawtooth'));
-	
-	      dispatch(oscillatorStart('vco', 0));
-	
-	      dispatch(connectAudioNodes('output'));
-	
-	      socket.on('tweet', function (tweet) {
-	        dispatch(linearRampToValueAtTime('output.gain', 0.8, context.currentTime + 0.2));
-	        dispatch((0, _actions.countPlace)(tweet.place.name));
-	        dispatch((0, _actions.recieveTweet)(tweet));
-	        socket.emit('response');
-	      });
-	
-	      socket.on('tweetResponse', function () {
-	        console.log('******* TWEET RESPONSE *******');
-	        dispatch(linearRampToValueAtTime('output.gain', 0.0, context.currentTime + 1.1));
-	      });
 	    }
-	
 	  };
 	};
 	
@@ -27202,13 +27253,14 @@
 	var App = function App(_ref) {
 	  var killStream = _ref.killStream,
 	      didConnect = _ref.didConnect,
-	      fetchTweets = _ref.fetchTweets,
+	      openStream = _ref.openStream,
 	      connected = _ref.streamReducer.connected,
 	      locations = _ref.dataReducer.locations,
 	      audioContextAndGraph = _ref.audioContextProvider.audioContextAndGraph;
 	
 	
-	  var places = Object.keys(locations);
+	  var keys = Object.keys(locations);
+	  var places = keys.length > 10 ? keys.slice(0, 10) : keys;
 	
 	  var locationCounters = places.map(function (place) {
 	    return _react2.default.createElement(
@@ -27230,7 +27282,7 @@
 	    _react2.default.createElement(
 	      "button",
 	      { type: "button", onClick: function onClick() {
-	          return fetchTweets(audioContextAndGraph);
+	          return openStream(audioContextAndGraph);
 	        } },
 	      "Strart Stream"
 	    ),
