@@ -3,13 +3,14 @@ import React from 'react';
 const App = ({
   killStream,
   didConnect,
-  fetchTweets,
+  openStream,
   streamReducer: { connected },
   dataReducer: { locations },
   audioContextProvider: { audioContextAndGraph }
 }) => {
 
-  const places = Object.keys(locations);
+  const keys = Object.keys(locations);
+  const places = keys.length > 10 ? keys.slice(0, 10) : keys;
 
   const locationCounters = places.map(
     place => (
@@ -23,7 +24,7 @@ const App = ({
 
   return (
     <div id="outer-container">
-      <button type="button" onClick={() => fetchTweets(audioContextAndGraph)}>
+      <button type="button" onClick={() => openStream(audioContextAndGraph)}>
         Strart Stream
       </button>
       <button type="button" onClick={killStream}>

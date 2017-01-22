@@ -1,5 +1,6 @@
 const path = require('path');
 const http = require('http');
+const chalk = require('chalk');
 const express = require('express');
 const socketio = require('socket.io');
 const volleyball = require('volleyball');
@@ -21,19 +22,48 @@ const io = socketio(server);
 const twitter = new TweetStream(require('../twitter.config'));
 
 io.on('connection', socket => {
+
   // * SEARCH PARAMS TWITTER STREAM TO LISTEN FOR * \\
   // ~-~-~ this location is NYC ~-~-~ \\
   twitter.location('-74,40,-73,41');
 
-  // * TWITTER EVENT LISTENERS * \\
-  twitter.on('tweet', tweet => socket.emit('tweet', tweet));
-  twitter.on('error', err => console.log('Ohhh noooo, an errrrrrr', err));
+  // ------------------> APP EVENT LISTENERS <------------------ \\
+  socket.on('didConnect', () => {
+    console.log('******* CONNECTED *******');
+    socket.emit('didConnectResponse');
+  });
 
-  // * APP EVENT LISTENERS * \\
-  // socket.on('didconnect', () => socket.emit('connectResponse'));
+  socket.on('fetchTweets', () => {
+    // * TWITTER EVENT LISTENERS * \\
+    twitter.on('tweet', tweet => {
+      console.log(chalk.blue('*---> TWEET RECEIVED <---*'));
+      socket.emit('tweet', tweet);
+    });
+    twitter.on('error', err =>
+      console.log('Ohhh noooo, an errrrrrr', err)
+    );
+  });
 
-  // * TWEET RESPONSE -- use it like after-touch -- * \\
-  socket.on('response', () => socket.emit('tweetResponse'));
+  socket.on('tweetResponse', () => {
+    console.log(chalk.dim.blue('<---* SENT RESPONSE *--->'));
+    socket.emit('responseReceived');
+  });
+
+  socket.on('manhattan', () => {
+    console.log(chalk.cyan('*-~M-~A-~N-~H-~A-~T-~T-~A-~N-~*'));
+  });
+
+  socket.on('brooklyn', () => {
+    console.log(chalk.yellow('*-~B-~R-~O-~O-~K-~L-~Y-~N-~*'));
+  });
+
+  socket.on('bronx', () => {
+    console.log(chalk.green('*-~B-~R-~O-~N-~X-~*'));
+  });
+
+  socket.on('queens', () => {
+    console.log(chalk.magenta('*-~Q-~U-~E-~E-~N-~S-~*'));
+  });
 
   // * KILL SWITCH * \\
   socket.on('abort', () => twitter.abort());
