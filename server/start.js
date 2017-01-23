@@ -53,7 +53,7 @@ io.on('connection', socket => {
     twitter.on('tweet', tweet => {
       const { name } = tweet.place;
       const { followers_count } = tweet.user;
-      const manyFollowers = followers_count > 208;
+      const manyFollowers = followers_count > 500;
 
       switch (name) {
         case 'Bronx':
@@ -81,23 +81,23 @@ io.on('connection', socket => {
     );
   });
 
-  socket.on('tweetResponse', location => {
+  socket.on('tweetResponse', (location, manyFollowers) => {
     switch (location) {
       case 'bronx':
         console.log(chalk.dim.green('*~B-~R-~O-~N-~X-~-~>'));
-        socket.emit('bronxResponse');
+        socket.emit('bronxResponse', manyFollowers);
         break;
       case 'queens':
         console.log(chalk.dim.magenta('*~Q-~U-~E-~E-~N-~S-~-~>'));
-        socket.emit('queensResponse');
+        socket.emit('queensResponse', manyFollowers);
         break;
       case 'brooklyn':
         console.log(chalk.dim.yellow('*~B-~R-~O-~O-~K-~L-~Y-~N-~-~>'));
-        socket.emit('brooklynResponse');
+        socket.emit('brooklynResponse', manyFollowers);
         break;
       case 'manhattan':
         console.log(chalk.dim.cyan('*~M-~A-~N-~H-~A-~T-~T-~A-~N-~-~>'));
-        socket.emit('manhattanResponse');
+        socket.emit('manhattanResponse', manyFollowers);
         break;
       default:
         console.log(chalk.bold.red('*~W-~T-~F-*'));

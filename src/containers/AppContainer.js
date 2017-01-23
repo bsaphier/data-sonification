@@ -6,11 +6,11 @@ import App from '../components/App';
 import {
   abort,
   loadIR,
-  toggle,
   noteOn,
   noteOff,
   analyzeTone,
   socketConnected,
+  togglePositivity,
   createCtxAndMasterGain
 } from '../actions';
 
@@ -23,6 +23,7 @@ const {
   createOscillator,
   connectAudioNodes,
   closeAudioContext,
+  createDynamicsCompressor
 } = audioActionCreators;
 
 const socket = io(window.location.origin);
@@ -46,33 +47,35 @@ const mapDispatchToProps = dispatch => {
     {thisNode: 'feedback', thatNode: 'delay'},
     {thisNode: 'delay', thatNode: 'delaySend'},
     {thisNode: 'channelGain', thatNode: 'send'},
-    {thisNode: 'delay', thatNode: 'masterGain'},
-    {thisNode: 'channelGain', thatNode: 'masterGain'}
+    {thisNode: 'delay', thatNode: 'compressor'},
+    {thisNode: 'channelGain', thatNode: 'compressor'},
+    {thisNode: 'compressor', thatNode: 'masterGain'}
   ];
 
   return {
-    toneDidChange: joy => {
-      if (joy) {
-        dispatch(setParam('vco1.type', 'triangle'));
-        dispatch(setParam('vco2.type', 'sine'));
-        dispatch(setParam('vco3.type', 'triangle'));
-        dispatch(setParam('vco4.type', 'sine'));
-      } else {
-        dispatch(setParam('vco1.type', 'square'));
-        dispatch(setParam('vco2.type', 'triangle'));
-        dispatch(setParam('vco3.type', 'square'));
-        dispatch(setParam('vco4.type', 'triangle'));
-      }
-      dispatch(toggle());
+    togglePositivity: positivity => dispatch(togglePositivity(positivity)),
+
+
+    killStream: () => {
+      socket.emit('abort');
+      dispatch(abort());
+      dispatch(closeAudioContext());
     },
+
 
     didConnect: () => {
 
       dispatch(createCtxAndMasterGain('masterGain'));
 
-      // dispatch(createBufferSource('irHallBuffer'));
+      dispatch(createDynamicsCompressor('compressor'));
+      dispatch(setParam('compressor.threshold.value', -36));
+      dispatch(setParam('compressor.attack.value', 0.1));
+      dispatch(setParam('compressor.release.value', 0.6));
+      dispatch(setParam('compressor.ratio.value', 2));
+      dispatch(setParam('compressor.knee.value', 13));
+
       dispatch(createConvolver('convolver'));
-      dispatch(setParam('convolver.normalize', true));
+      dispatch(setParam('convolver.normalize', false));
       dispatch(loadIR('convolver'));
 
       socket.on('connect', () => {
@@ -83,11 +86,11 @@ const mapDispatchToProps = dispatch => {
       socket.on('didConnectResponse', () => {
 
         oscillators.forEach(name => dispatch(createOscillator(name)));
-        dispatch(createDelay('delay'));
+        dispatch(createDelay('delay', 2.0));
 
         gains.forEach(name => dispatch(createGain(name)));
         dispatch(setParam('send.gain.value', 0.34));
-        dispatch(setParam('delaySend.gain.value', 0.38));
+        dispatch(setParam('delaySend.gain.value', 0.21));
         dispatch(setParam('feedback.gain.value', 0.62));
         dispatch(setParam('channelGain.gain.value', 0.8));
         dispatch(setParam('delay.delayTime.value', 0.05));
@@ -98,23 +101,27 @@ const mapDispatchToProps = dispatch => {
         dispatch(connectAudioNodes('delaySend', 'convolver'));
         dispatch(connectAudioNodes('convolver', 'masterGain'));
 
+        // Bronx OSC
         dispatch(setParam('vco1.type', 'triangle'));
-        dispatch(setParam('vco1.frequency.value', 82.41));
+        dispatch(setParam('vco1.frequency.value', 49));
         dispatch(setParam('gain1.gain.value', 0));
         dispatch(connectAudioNodes('gain1', 'channelGain'));
 
+        // Brooklyn OSC
         dispatch(setParam('vco2.type', 'sine'));
-        dispatch(setParam('vco2.frequency.value', 110));
+        dispatch(setParam('vco2.frequency.value', 220));
         dispatch(setParam('gain2.gain.value', 0));
         dispatch(connectAudioNodes('gain2', 'channelGain'));
 
+        // Queens OSC
         dispatch(setParam('vco3.type', 'triangle'));
         dispatch(setParam('vco3.frequency.value', 146.83));
         dispatch(setParam('gain3.gain.value', 0));
         dispatch(connectAudioNodes('gain3', 'channelGain'));
 
+        // Manhattan OSC
         dispatch(setParam('vco4.type', 'sine'));
-        dispatch(setParam('vco4.frequency.value', 196));
+        dispatch(setParam('vco4.frequency.value', 329.63));
         dispatch(setParam('gain4.gain.value', 0));
         dispatch(connectAudioNodes('gain4', 'channelGain'));
 
@@ -123,68 +130,70 @@ const mapDispatchToProps = dispatch => {
       });
     },
 
-    killStream: () => {
-      socket.emit('abort');
-      dispatch(abort());
-      dispatch(closeAudioContext());
-    },
 
-    openStream: ({ context }, positivity) => {
-      let rverb;
-      if (positivity >= 0 && positivity <= 1) {
-        rverb = positivity;
-      } else if (positivity < 0) {
-        rverb = (positivity * -1) / 100;
-      } else {
-        rverb = positivity / 10;
-      }
+    openStream: ({ context }) => {
       socket.emit('fetchTweets');
 
-      socket.on('bronxResponse', () =>
-        dispatch(
-          noteOff('gain1.gain', context)
-        )
-      );
-      socket.on('queensResponse', () =>
-        dispatch(
-          noteOff('gain3.gain', context)
-        )
-      );
-      socket.on('brooklynResponse', () =>
-        dispatch(
-          noteOff('gain2.gain', context)
-        )
-      );
-      socket.on('manhattanResponse', () =>
-        dispatch(
-          noteOff('gain4.gain', context)
-        )
-      );
+      socket.on('bronxResponse', manyFollowers => {
+        if (manyFollowers) {
+          dispatch(setParam('vco1.type', 'sawtooth'));
+          dispatch(setParam('delay.delayTime.value', 0.089));
+        }
+        dispatch(noteOff('gain1.gain', context));
+      });
+      socket.on('queensResponse', manyFollowers => {
+        if (manyFollowers) {
+          dispatch(setParam('vco3.type', 'sawtooth'));
+          dispatch(setParam('delay.delayTime.value', 0.055));
+        }
+        dispatch(noteOff('gain3.gain', context));
+      });
+      socket.on('brooklynResponse', manyFollowers => {
+        if (manyFollowers) {
+          dispatch(setParam('vco2.type', 'triangle'));
+          dispatch(setParam('delay.delayTime.value', 0.055));
+        }
+        dispatch(noteOff('gain2.gain', context));
+      });
+      socket.on('manhattanResponse', manyFollowers => {
+        if (manyFollowers) {
+          dispatch(setParam('vco4.type', 'triangle'));
+          dispatch(setParam('delay.delayTime.value', 0.034));
+        }
+        dispatch(noteOff('gain4.gain', context));
+      });
 
       socket.on('bronx', ({ tweet, manyFollowers }) => {
-        const delTime = manyFollowers ? 0.144 : 0.021;
+        if (!manyFollowers) {
+          dispatch(setParam('vco1.type', 'triangle'));
+          dispatch(setParam('delay.delayTime.value', 0.987));
+        }
+        dispatch(noteOn(manyFollowers, tweet, 'bronx', 'gain1.gain', context, socket));
         dispatch(analyzeTone(tweet));
-        dispatch(setParam('delay.delayTime.value', delTime));
-        dispatch(noteOn(tweet, 'bronx', 'gain1.gain', context, rverb, socket));
       });
       socket.on('queens', ({ tweet, manyFollowers }) => {
-        const delTime = manyFollowers ? 0.377 : 0.034;
+        if (!manyFollowers) {
+          dispatch(setParam('vco3.type', 'triangle'));
+          dispatch(setParam('delay.delayTime.value', 0.610));
+        }
+        dispatch(noteOn(manyFollowers, tweet, 'queens', 'gain3.gain', context, socket));
         dispatch(analyzeTone(tweet));
-        dispatch(setParam('delay.delayTime.value', delTime));
-        dispatch(noteOn(tweet, 'queens', 'gain3.gain', context, rverb, socket));
       });
       socket.on('brooklyn', ({ tweet, manyFollowers }) => {
-        const delTime = manyFollowers ? 0.987 : 0.055;
+        if (!manyFollowers) {
+          dispatch(setParam('vco2.type', 'sine'));
+          dispatch(setParam('delay.delayTime.value', 0.610));
+        }
+        dispatch(noteOn(manyFollowers, tweet, 'brooklyn', 'gain2.gain', context, socket));
         dispatch(analyzeTone(tweet));
-        dispatch(setParam('delay.delayTime.value', delTime));
-        dispatch(noteOn(tweet, 'brooklyn', 'gain2.gain', context, rverb, socket)
-        );
       });
       socket.on('manhattan', ({ tweet, manyFollowers }) => {
-        const delTime = manyFollowers ? 1.597 : 0.089;
+        if (!manyFollowers) {
+          dispatch(setParam('vco4.type', 'sine'));
+          dispatch(setParam('delay.delayTime.value', 0.377));
+        }
+        dispatch(noteOn(manyFollowers, tweet, 'manhattan', 'gain4.gain', context, socket));
         dispatch(analyzeTone(tweet));
-        dispatch(setParam('delay.delayTime.value', delTime));
-        dispatch(noteOn(tweet, 'manhattan', 'gain4.gain', context, rverb, socket));
       });
     }
   };

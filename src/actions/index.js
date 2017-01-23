@@ -13,17 +13,18 @@ const {
 
 import {
   COUNT,
-  TOGGLE,
   CONNECTED,
   ABORT_STREAM,
   RECEIVE_TONE,
-  RECEIVE_TWEET
+  RECEIVE_TWEET,
+  TOGGLE_POSITIVITY
 } from '../constants';
 
 // ----------------> ACTION CREATORS <----------------
-export const recieveTweet = tweet => ({
+export const recieveTweet = (tweet, manyFollowers) => ({
   type: RECEIVE_TWEET,
-  tweet
+  tweet,
+  manyFollowers
 });
 
 export const countPlace = place => ({
@@ -36,16 +37,16 @@ export const receiveTone = tones => ({
   tones
 });
 
+export const togglePos = () => ({
+  type: TOGGLE_POSITIVITY
+});
+
 export const socketConnected = () => ({
   type: CONNECTED
 });
 
 export const abort = () => ({
   type: ABORT_STREAM
-});
-
-export const toggle = () => ({
-  type: TOGGLE
 });
 
 
@@ -57,18 +58,17 @@ export const createCtxAndMasterGain = name => dispatch => {
   dispatch(connectAudioNodes(name));
 };
 
-export const noteOn = (tweet, place, param, ctx, rverb, socket) => dispatch => {
-  dispatch(recieveTweet(tweet));
+export const noteOn = (followers, tweet, place, param, ctx, socket) => dispatch => {
+  const peak = followers ? 1.0 : 0.3;
+  const attack = followers ? ctx.currentTime + 0.01 : ctx.currentTime + 0.15;
+  dispatch(recieveTweet(tweet, followers));
   dispatch(countPlace(tweet.place.name));
-  dispatch(
-    linearRampToValueAtTime(param, 0.6, ctx.currentTime + 0.02));
-  dispatch(setParam('delaySend.gain.value', rverb));
-  socket.emit('tweetResponse', place);
+  dispatch(linearRampToValueAtTime(param, peak, attack));
+  socket.emit('tweetResponse', place, followers);
 };
 
 export const noteOff = (param, context) => dispatch => {
-  dispatch(linearRampToValueAtTime(param, 0.0, context.currentTime + 0.15));
-  dispatch(setParam('delaySend.gain.value', 0.02));
+  dispatch(linearRampToValueAtTime(param, 0.0, context.currentTime + 0.25));
 };
 
 export const loadIR = bufferSource => dispatch => {
@@ -89,4 +89,22 @@ export const analyzeTone = tweet => dispatch => {
     .catch(err =>
       console.log(err)
     );
+};
+
+export const togglePositivity = ({isLow, positivity}) => dispatch => {
+  let delaySend, feedback, send;
+  if (isLow) {
+    send = positivity % 1 > 0.4 ? 0.4 : positivity % 1;
+    delaySend = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+    dispatch(setParam('delaySend.gain.value', delaySend));
+    dispatch(setParam('feedback.gain.value', 0.05));
+    dispatch(setParam('send.gain.value', send));
+  } else {
+    send = positivity % 1 < 0.3 ? 0.3 : positivity % 1;
+    feedback = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+    dispatch(setParam('feedback.gain.value', feedback));
+    dispatch(setParam('delaySend.gain.value', 0.1));
+    dispatch(setParam('send.gain.value', send));
+  }
+  dispatch(togglePos());
 };

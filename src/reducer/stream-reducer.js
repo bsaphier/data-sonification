@@ -5,6 +5,7 @@ import {
 } from '../constants';
 
 const initialState = {
+  manyFollowers: null,
   connected: false,
   tweet: false
 };
@@ -26,6 +27,7 @@ const streamReducer = (state = initialState, action) => {
 
     case RECEIVE_TWEET:
       nextState.tweet = action.tweet;
+      nextState.manyFollowers = action.manyFollowers;
       return nextState;
 
     default:
