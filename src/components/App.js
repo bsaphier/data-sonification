@@ -4,36 +4,36 @@ const App = ({
   killStream,
   didConnect,
   openStream,
-  toneDidChange,
+  dataReducer,
+  togglePositivity,
   streamReducer: { connected },
-  dataReducer: { joy, fear, anger, negative, locations },
   audioContextProvider: { audioContextAndGraph }
 }) => {
   if (!connected && !audioContextAndGraph.context) didConnect();
 
-  // let joy = true;
-  const keys = Object.keys(locations);
+  const keys = Object.keys(dataReducer.locations);
   const places = keys.length > 10 ? keys.slice(0, 10) : keys;
 
   const locationCounters = places.map(
     place => (
       <div key={place}>
-        <p>{`${place}: ${locations[place]}`}</p>
+        <p>{`${place}: ${dataReducer.locations[place]}`}</p>
       </div>
     )
   );
 
-  const positivity = joy - anger - fear;
-
-  if (negative) toneDidChange(positivity > 0);
-
+  if (!dataReducer.lowPositivity && dataReducer.positivity < 0.5) {
+    togglePositivity(dataReducer);
+  } else if (dataReducer.lowPositivity && dataReducer.positivity > 0.5) {
+    togglePositivity(dataReducer);
+  }
 
   return (
     <div id="outer-container">
       <h1>DATA SONIFICATION</h1>
       <button
         type="button"
-        onClick={() => openStream(audioContextAndGraph, positivity)}
+        onClick={() => openStream(audioContextAndGraph, dataReducer)}
       >
         Strart Stream
       </button>
@@ -43,11 +43,14 @@ const App = ({
       >
         Stop Stream
       </button>
-      <h2>{ `Positivity Meter: ${positivity}` }</h2>
+      <h2>{ `Positivity Meter: ${Number(dataReducer.positivity)}` }</h2>
+      <h2>{ `Positivity is Low: ${dataReducer.lowPositivity}` }</h2>
+      <h2>{ audioContextAndGraph.audioNodes.delaySend && `delay send : ${audioContextAndGraph.audioNodes.delaySend.gain.value}` }</h2>
       <div>
-        <p>{`Joy: ${joy}`}</p>
-        <p>{`Fear: ${fear}`}</p>
-        <p>{`Anger: ${anger}`}</p>
+        <p>{`Joy: ${dataReducer.joy}`}</p>
+        <p>{`Fear: ${dataReducer.fear}`}</p>
+        <p>{`Anger: ${dataReducer.anger}`}</p>
+        <p>{`Sadness: ${dataReducer.sadness}`}</p>
       </div>
       <hr />
       <div>{ locationCounters }</div>
