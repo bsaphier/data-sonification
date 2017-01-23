@@ -27038,7 +27038,12 @@
 	var _constants = __webpack_require__(232);
 	
 	var initialState = {
-	  locations: {}
+	  tones: {},
+	  locations: {},
+	  joy: 0.000001,
+	  fear: 0.000001,
+	  anger: 0.000001,
+	  negative: true
 	};
 	
 	// --------------------> REDUCER <--------------------
@@ -27058,6 +27063,19 @@
 	      }
 	      return nextState;
 	
+	    case _constants.RECEIVE_TONE:
+	      action.tones.forEach(function (tone) {
+	        nextState.joy += tone.tone_id === 'joy' ? tone.score : 0;
+	        nextState.fear += tone.tone_id === 'fear' ? tone.score : 0;
+	        nextState.anger += tone.tone_id === 'anger' ? tone.score : 0;
+	        nextState.tones[tone.tone_id] = tone.score;
+	      });
+	      return nextState;
+	
+	    case _constants.TOGGLE:
+	      nextState.negative = !nextState.negative;
+	      return nextState;
+	
 	    default:
 	      return nextState;
 	  }
@@ -27075,7 +27093,9 @@
 	  value: true
 	});
 	var COUNT = exports.COUNT = 'COUNT';
+	var TOGGLE = exports.TOGGLE = 'TOGGLE';
 	var CONNECTED = exports.CONNECTED = 'CONNECTED';
+	var RECEIVE_TONE = exports.RECEIVE_TONE = 'RECEIVE_TONE';
 	var ABORT_STREAM = exports.ABORT_STREAM = 'ABORT_STREAM';
 	var RECEIVE_TWEET = exports.RECEIVE_TWEET = 'RECEIVE_TWEET';
 
@@ -27177,6 +27197,21 @@
 	  var connections = [{ thisNode: 'vco1', thatNode: 'gain1' }, { thisNode: 'vco2', thatNode: 'gain2' }, { thisNode: 'vco3', thatNode: 'gain3' }, { thisNode: 'vco4', thatNode: 'gain4' }, { thisNode: 'send', thatNode: 'delay' }, { thisNode: 'delay', thatNode: 'feedback' }, { thisNode: 'feedback', thatNode: 'delay' }, { thisNode: 'delay', thatNode: 'delaySend' }, { thisNode: 'channelGain', thatNode: 'send' }, { thisNode: 'delay', thatNode: 'masterGain' }, { thisNode: 'channelGain', thatNode: 'masterGain' }];
 	
 	  return {
+	    toneDidChange: function toneDidChange(joy) {
+	      if (joy) {
+	        dispatch(setParam('vco1.type', 'triangle'));
+	        dispatch(setParam('vco2.type', 'sine'));
+	        dispatch(setParam('vco3.type', 'triangle'));
+	        dispatch(setParam('vco4.type', 'sine'));
+	      } else {
+	        dispatch(setParam('vco1.type', 'square'));
+	        dispatch(setParam('vco2.type', 'triangle'));
+	        dispatch(setParam('vco3.type', 'square'));
+	        dispatch(setParam('vco4.type', 'triangle'));
+	      }
+	      dispatch((0, _actions.toggle)());
+	    },
+	
 	    didConnect: function didConnect() {
 	
 	      dispatch((0, _actions.createCtxAndMasterGain)('masterGain'));
@@ -27201,11 +27236,11 @@
 	        gains.forEach(function (name) {
 	          return dispatch(createGain(name));
 	        });
-	        dispatch(setParam('send.gain.value', 0.1));
-	        dispatch(setParam('delaySend.gain.value', 0.62));
-	        dispatch(setParam('feedback.gain.value', 0.38));
-	        dispatch(setParam('channelGain.gain.value', 0.62));
-	        dispatch(setParam('delay.delayTime.value', 0.01));
+	        dispatch(setParam('send.gain.value', 0.34));
+	        dispatch(setParam('delaySend.gain.value', 0.38));
+	        dispatch(setParam('feedback.gain.value', 0.62));
+	        dispatch(setParam('channelGain.gain.value', 0.8));
+	        dispatch(setParam('delay.delayTime.value', 0.05));
 	
 	        connections.forEach(function (nodes) {
 	          return dispatch(connectAudioNodes(nodes.thisNode, nodes.thatNode));
@@ -27219,7 +27254,7 @@
 	        dispatch(setParam('gain1.gain.value', 0));
 	        dispatch(connectAudioNodes('gain1', 'channelGain'));
 	
-	        dispatch(setParam('vco2.type', 'triangle'));
+	        dispatch(setParam('vco2.type', 'sine'));
 	        dispatch(setParam('vco2.frequency.value', 110));
 	        dispatch(setParam('gain2.gain.value', 0));
 	        dispatch(connectAudioNodes('gain2', 'channelGain'));
@@ -27246,10 +27281,17 @@
 	      dispatch(closeAudioContext());
 	    },
 	
-	    openStream: function openStream(_ref2) {
+	    openStream: function openStream(_ref2, positivity) {
 	      var context = _ref2.context;
 	
-	      // dispatch(setParam('convolver.buffer', audioNodes.irHallBuffer));
+	      var rverb = void 0;
+	      if (positivity >= 0 && positivity <= 1) {
+	        rverb = positivity;
+	      } else if (positivity < 0) {
+	        rverb = positivity * -1 / 100;
+	      } else {
+	        rverb = positivity / 10;
+	      }
 	      socket.emit('fetchTweets');
 	
 	      socket.on('bronxResponse', function () {
@@ -27265,17 +27307,41 @@
 	        return dispatch((0, _actions.noteOff)('gain4.gain', context));
 	      });
 	
-	      socket.on('bronx', function (tweet) {
-	        return dispatch((0, _actions.noteOn)(tweet, 'bronx', 'gain1.gain', context, 0.233, socket));
+	      socket.on('bronx', function (_ref3) {
+	        var tweet = _ref3.tweet,
+	            manyFollowers = _ref3.manyFollowers;
+	
+	        var delTime = manyFollowers ? 0.144 : 0.021;
+	        dispatch((0, _actions.analyzeTone)(tweet));
+	        dispatch(setParam('delay.delayTime.value', delTime));
+	        dispatch((0, _actions.noteOn)(tweet, 'bronx', 'gain1.gain', context, rverb, socket));
 	      });
-	      socket.on('queens', function (tweet) {
-	        return dispatch((0, _actions.noteOn)(tweet, 'queens', 'gain3.gain', context, 0.377, socket));
+	      socket.on('queens', function (_ref4) {
+	        var tweet = _ref4.tweet,
+	            manyFollowers = _ref4.manyFollowers;
+	
+	        var delTime = manyFollowers ? 0.377 : 0.034;
+	        dispatch((0, _actions.analyzeTone)(tweet));
+	        dispatch(setParam('delay.delayTime.value', delTime));
+	        dispatch((0, _actions.noteOn)(tweet, 'queens', 'gain3.gain', context, rverb, socket));
 	      });
-	      socket.on('brooklyn', function (tweet) {
-	        return dispatch((0, _actions.noteOn)(tweet, 'brooklyn', 'gain2.gain', context, 0.144, socket));
+	      socket.on('brooklyn', function (_ref5) {
+	        var tweet = _ref5.tweet,
+	            manyFollowers = _ref5.manyFollowers;
+	
+	        var delTime = manyFollowers ? 0.987 : 0.055;
+	        dispatch((0, _actions.analyzeTone)(tweet));
+	        dispatch(setParam('delay.delayTime.value', delTime));
+	        dispatch((0, _actions.noteOn)(tweet, 'brooklyn', 'gain2.gain', context, rverb, socket));
 	      });
-	      socket.on('manhattan', function (tweet) {
-	        return dispatch((0, _actions.noteOn)(tweet, 'manhattan', 'gain4.gain', context, 0.055, socket));
+	      socket.on('manhattan', function (_ref6) {
+	        var tweet = _ref6.tweet,
+	            manyFollowers = _ref6.manyFollowers;
+	
+	        var delTime = manyFollowers ? 1.597 : 0.089;
+	        dispatch((0, _actions.analyzeTone)(tweet));
+	        dispatch(setParam('delay.delayTime.value', delTime));
+	        dispatch((0, _actions.noteOn)(tweet, 'manhattan', 'gain4.gain', context, rverb, socket));
 	      });
 	    }
 	  };
@@ -27303,11 +27369,19 @@
 	  var killStream = _ref.killStream,
 	      didConnect = _ref.didConnect,
 	      openStream = _ref.openStream,
+	      toneDidChange = _ref.toneDidChange,
 	      connected = _ref.streamReducer.connected,
-	      locations = _ref.dataReducer.locations,
+	      _ref$dataReducer = _ref.dataReducer,
+	      joy = _ref$dataReducer.joy,
+	      fear = _ref$dataReducer.fear,
+	      anger = _ref$dataReducer.anger,
+	      negative = _ref$dataReducer.negative,
+	      locations = _ref$dataReducer.locations,
 	      audioContextAndGraph = _ref.audioContextProvider.audioContextAndGraph;
 	
+	  if (!connected && !audioContextAndGraph.context) didConnect();
 	
+	  // let joy = true;
 	  var keys = Object.keys(locations);
 	  var places = keys.length > 10 ? keys.slice(0, 10) : keys;
 	
@@ -27323,17 +27397,24 @@
 	    );
 	  });
 	
-	  if (!connected && !audioContextAndGraph.context) didConnect();
+	  var positivity = joy - anger - fear;
+	
+	  if (negative) toneDidChange(positivity > 0);
 	
 	  return _react2.default.createElement(
 	    "div",
 	    { id: "outer-container" },
 	    _react2.default.createElement(
+	      "h1",
+	      null,
+	      "DATA SONIFICATION"
+	    ),
+	    _react2.default.createElement(
 	      "button",
 	      {
 	        type: "button",
 	        onClick: function onClick() {
-	          return openStream(audioContextAndGraph);
+	          return openStream(audioContextAndGraph, positivity);
 	        }
 	      },
 	      "Strart Stream"
@@ -27346,6 +27427,31 @@
 	      },
 	      "Stop Stream"
 	    ),
+	    _react2.default.createElement(
+	      "h2",
+	      null,
+	      "Positivity Meter: " + positivity
+	    ),
+	    _react2.default.createElement(
+	      "div",
+	      null,
+	      _react2.default.createElement(
+	        "p",
+	        null,
+	        "Joy: " + joy
+	      ),
+	      _react2.default.createElement(
+	        "p",
+	        null,
+	        "Fear: " + fear
+	      ),
+	      _react2.default.createElement(
+	        "p",
+	        null,
+	        "Anger: " + anger
+	      )
+	    ),
+	    _react2.default.createElement("hr", null),
 	    _react2.default.createElement(
 	      "div",
 	      null,
@@ -27365,7 +27471,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.loadIR = exports.noteOff = exports.noteOn = exports.createCtxAndMasterGain = exports.abort = exports.socketConnected = exports.countPlace = exports.recieveTweet = undefined;
+	exports.analyzeTone = exports.loadIR = exports.noteOff = exports.noteOn = exports.createCtxAndMasterGain = exports.toggle = exports.abort = exports.socketConnected = exports.receiveTone = exports.countPlace = exports.recieveTweet = undefined;
 	
 	var _axios = __webpack_require__(237);
 	
@@ -27377,6 +27483,7 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
+	/*eslint-disable camelcase maxparams */
 	var setParam = _reactReduxWebaudio.audioActionCreators.setParam,
 	    createGain = _reactReduxWebaudio.audioActionCreators.createGain,
 	    decodeAudioData = _reactReduxWebaudio.audioActionCreators.decodeAudioData,
@@ -27400,6 +27507,13 @@
 	  };
 	};
 	
+	var receiveTone = exports.receiveTone = function receiveTone(tones) {
+	  return {
+	    type: _constants.RECEIVE_TONE,
+	    tones: tones
+	  };
+	};
+	
 	var socketConnected = exports.socketConnected = function socketConnected() {
 	  return {
 	    type: _constants.CONNECTED
@@ -27409,6 +27523,12 @@
 	var abort = exports.abort = function abort() {
 	  return {
 	    type: _constants.ABORT_STREAM
+	  };
+	};
+	
+	var toggle = exports.toggle = function toggle() {
+	  return {
+	    type: _constants.TOGGLE
 	  };
 	};
 	
@@ -27422,19 +27542,20 @@
 	  };
 	};
 	
-	var noteOn = exports.noteOn = function noteOn(tweet, place, param, ctx, delay, socket) {
+	var noteOn = exports.noteOn = function noteOn(tweet, place, param, ctx, rverb, socket) {
 	  return function (dispatch) {
 	    dispatch(recieveTweet(tweet));
 	    dispatch(countPlace(tweet.place.name));
-	    dispatch(linearRampToValueAtTime(param, 0.5, ctx.currentTime + 0.03));
-	    dispatch(setParam('delay.delayTime.value', delay));
+	    dispatch(linearRampToValueAtTime(param, 0.6, ctx.currentTime + 0.02));
+	    dispatch(setParam('delaySend.gain.value', rverb));
 	    socket.emit('tweetResponse', place);
 	  };
 	};
 	
 	var noteOff = exports.noteOff = function noteOff(param, context) {
 	  return function (dispatch) {
-	    dispatch(linearRampToValueAtTime(param, 0.0, context.currentTime + 0.22));
+	    dispatch(linearRampToValueAtTime(param, 0.0, context.currentTime + 0.15));
+	    dispatch(setParam('delaySend.gain.value', 0.02));
 	  };
 	};
 	
@@ -27444,6 +27565,18 @@
 	      dispatch(decodeAudioData(res.data, function (decodedAudio) {
 	        dispatch(setParam(bufferSource + '.buffer', decodedAudio));
 	      }));
+	    });
+	  };
+	};
+	
+	var analyzeTone = exports.analyzeTone = function analyzeTone(tweet) {
+	  return function (dispatch) {
+	    _axios2.default.post('/api/tone', tweet).then(function (res) {
+	      var tones = res.data.document_tone.tone_categories[0].tones;
+	
+	      dispatch(receiveTone(tones));
+	    }).catch(function (err) {
+	      return console.log(err);
 	    });
 	  };
 	};

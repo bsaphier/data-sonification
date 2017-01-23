@@ -1,18 +1,27 @@
+/*eslint-disable camelcase */
 const path = require('path');
 const http = require('http');
 const chalk = require('chalk');
 const express = require('express');
 const socketio = require('socket.io');
 const volleyball = require('volleyball');
+const bodyParser = require('body-parser');
 const TweetStream = require('node-tweet-stream');
+const watson = require('watson-developer-cloud');
 
 const app = express();
 const server = http.createServer();
 
 const rootPath = path.join(__dirname, '..');
-const binPath = path.join(rootPath, 'bin');
 const publicPath = path.join(rootPath, 'public');
 const nodeModulesPath = path.join(rootPath, 'node_modules');
+
+const toneAnalyzer = watson.tone_analyzer({
+  username: 'f859bdbb-b933-4c57-a7fa-bd37c1337f6b',
+  password: 'TprhLjXj1pZu',
+  version: 'v3',
+  version_date: '2016-05-19'
+});
 
 server.on('request', app);
 app.set('port', (process.env.PORT || 1337));
@@ -27,6 +36,7 @@ io.on('connection', socket => {
   // * SEARCH PARAMS TWITTER STREAM TO LISTEN FOR * \\
   // ~-~-~ this location is NYC ~-~-~ \\
   twitter.location('-74,40,-73,41');
+  // twitter.track('fullstack');
 
   // ------------------> APP EVENT LISTENERS <------------------ \\
   socket.on('didConnect', () => {
@@ -42,24 +52,25 @@ io.on('connection', socket => {
   socket.on('fetchTweets', () => {
     twitter.on('tweet', tweet => {
       const { name } = tweet.place;
-      // const { followers_count } = tweet.user;
+      const { followers_count } = tweet.user;
+      const manyFollowers = followers_count > 208;
 
       switch (name) {
         case 'Bronx':
           console.log(chalk.green('<-~-~B-~R-~O-~N-~X-*'));
-          socket.emit('bronx', tweet);
+          socket.emit('bronx', {tweet, manyFollowers});
           break;
         case 'Queens':
           console.log(chalk.magenta('<-~-~Q-~U-~E-~E-~N-~S-*'));
-          socket.emit('queens', tweet);
+          socket.emit('queens', {tweet, manyFollowers});
           break;
         case 'Brooklyn':
           console.log(chalk.yellow('<-~-~B-~R-~O-~O-~K-~L-~Y-~N-*'));
-          socket.emit('brooklyn', tweet);
+          socket.emit('brooklyn', {tweet, manyFollowers});
           break;
         case 'Manhattan':
           console.log(chalk.cyan('<-~-~M-~A-~N-~H-~A-~T-~T-~A-~N-*'));
-          socket.emit('manhattan', tweet);
+          socket.emit('manhattan', {tweet, manyFollowers});
           break;
         default:
           console.log(chalk.gray('<-~-~O-~T-~H-~E-~R-*'));
@@ -103,6 +114,18 @@ app.use(express.static(rootPath));
 app.use(express.static(publicPath));
 app.use(express.static(nodeModulesPath));
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~- API -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~- \\
+app.post('/api/tone', (req, res, next) => {
+  toneAnalyzer.tone({text: req.body.text}, (err, data) => {
+    if (err) {
+      return next(err);
+    }
+    return res.json(data);
+  });
+});
 
 // -~-~-~-~-~-~-~-~-~-~-~-~-~-~ SERVE IT UP ~-~-~-~-~-~-~-~-~-~-~-~-~-~- \\
 app.get('/', (req, res, next) => {
