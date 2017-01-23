@@ -6,7 +6,7 @@ const App = ({
   openStream,
   dataReducer,
   togglePositivity,
-  streamReducer: { connected },
+  streamReducer: { connected, manyFollowers },
   audioContextProvider: { audioContextAndGraph }
 }) => {
   if (!connected && !audioContextAndGraph.context) didConnect();
@@ -44,8 +44,8 @@ const App = ({
         Stop Stream
       </button>
       <h2>{ `Positivity Meter: ${Number(dataReducer.positivity)}` }</h2>
-      <h2>{ `Positivity is Low: ${dataReducer.lowPositivity}` }</h2>
-      <h2>{ audioContextAndGraph.audioNodes.delaySend && `delay send : ${audioContextAndGraph.audioNodes.delaySend.gain.value}` }</h2>
+      <h2>{ `Incoming tweet has many followers: ${manyFollowers}` }</h2>
+      {/* <h2>{ audioContextAndGraph.audioNodes.delaySend && `delay send : ${audioContextAndGraph.audioNodes.delaySend.gain.value}` }</h2> */}
       <div>
         <p>{`Joy: ${dataReducer.joy}`}</p>
         <p>{`Fear: ${dataReducer.fear}`}</p>

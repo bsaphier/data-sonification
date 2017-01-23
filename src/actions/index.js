@@ -21,9 +21,10 @@ import {
 } from '../constants';
 
 // ----------------> ACTION CREATORS <----------------
-export const recieveTweet = tweet => ({
+export const recieveTweet = (tweet, manyFollowers) => ({
   type: RECEIVE_TWEET,
-  tweet
+  tweet,
+  manyFollowers
 });
 
 export const countPlace = place => ({
@@ -60,7 +61,7 @@ export const createCtxAndMasterGain = name => dispatch => {
 export const noteOn = (followers, tweet, place, param, ctx, socket) => dispatch => {
   const peak = followers ? 1.0 : 0.3;
   const attack = followers ? ctx.currentTime + 0.01 : ctx.currentTime + 0.15;
-  dispatch(recieveTweet(tweet));
+  dispatch(recieveTweet(tweet, followers));
   dispatch(countPlace(tweet.place.name));
   dispatch(linearRampToValueAtTime(param, peak, attack));
   socket.emit('tweetResponse', place, followers);

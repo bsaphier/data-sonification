@@ -68,7 +68,7 @@ const mapDispatchToProps = dispatch => {
       dispatch(createCtxAndMasterGain('masterGain'));
 
       dispatch(createDynamicsCompressor('compressor'));
-      dispatch(setParam('compressor.threshold.value', -34));
+      dispatch(setParam('compressor.threshold.value', -36));
       dispatch(setParam('compressor.attack.value', 0.1));
       dispatch(setParam('compressor.release.value', 0.6));
       dispatch(setParam('compressor.ratio.value', 2));
@@ -103,13 +103,13 @@ const mapDispatchToProps = dispatch => {
 
         // Bronx OSC
         dispatch(setParam('vco1.type', 'triangle'));
-        dispatch(setParam('vco1.frequency.value', 82.41));
+        dispatch(setParam('vco1.frequency.value', 49));
         dispatch(setParam('gain1.gain.value', 0));
         dispatch(connectAudioNodes('gain1', 'channelGain'));
 
         // Brooklyn OSC
         dispatch(setParam('vco2.type', 'sine'));
-        dispatch(setParam('vco2.frequency.value', 110));
+        dispatch(setParam('vco2.frequency.value', 220));
         dispatch(setParam('gain2.gain.value', 0));
         dispatch(connectAudioNodes('gain2', 'channelGain'));
 
@@ -121,7 +121,7 @@ const mapDispatchToProps = dispatch => {
 
         // Manhattan OSC
         dispatch(setParam('vco4.type', 'sine'));
-        dispatch(setParam('vco4.frequency.value', 196));
+        dispatch(setParam('vco4.frequency.value', 329.63));
         dispatch(setParam('gain4.gain.value', 0));
         dispatch(connectAudioNodes('gain4', 'channelGain'));
 

@@ -27135,6 +27135,7 @@
 	var _constants = __webpack_require__(232);
 	
 	var initialState = {
+	  manyFollowers: null,
 	  connected: false,
 	  tweet: false
 	};
@@ -27159,6 +27160,7 @@
 	
 	    case _constants.RECEIVE_TWEET:
 	      nextState.tweet = action.tweet;
+	      nextState.manyFollowers = action.manyFollowers;
 	      return nextState;
 	
 	    default:
@@ -27236,7 +27238,7 @@
 	      dispatch((0, _actions.createCtxAndMasterGain)('masterGain'));
 	
 	      dispatch(createDynamicsCompressor('compressor'));
-	      dispatch(setParam('compressor.threshold.value', -34));
+	      dispatch(setParam('compressor.threshold.value', -36));
 	      dispatch(setParam('compressor.attack.value', 0.1));
 	      dispatch(setParam('compressor.release.value', 0.6));
 	      dispatch(setParam('compressor.ratio.value', 2));
@@ -27276,13 +27278,13 @@
 	
 	        // Bronx OSC
 	        dispatch(setParam('vco1.type', 'triangle'));
-	        dispatch(setParam('vco1.frequency.value', 82.41));
+	        dispatch(setParam('vco1.frequency.value', 49));
 	        dispatch(setParam('gain1.gain.value', 0));
 	        dispatch(connectAudioNodes('gain1', 'channelGain'));
 	
 	        // Brooklyn OSC
 	        dispatch(setParam('vco2.type', 'sine'));
-	        dispatch(setParam('vco2.frequency.value', 110));
+	        dispatch(setParam('vco2.frequency.value', 220));
 	        dispatch(setParam('gain2.gain.value', 0));
 	        dispatch(connectAudioNodes('gain2', 'channelGain'));
 	
@@ -27294,7 +27296,7 @@
 	
 	        // Manhattan OSC
 	        dispatch(setParam('vco4.type', 'sine'));
-	        dispatch(setParam('vco4.frequency.value', 196));
+	        dispatch(setParam('vco4.frequency.value', 329.63));
 	        dispatch(setParam('gain4.gain.value', 0));
 	        dispatch(connectAudioNodes('gain4', 'channelGain'));
 	
@@ -27410,7 +27412,9 @@
 	      openStream = _ref.openStream,
 	      dataReducer = _ref.dataReducer,
 	      togglePositivity = _ref.togglePositivity,
-	      connected = _ref.streamReducer.connected,
+	      _ref$streamReducer = _ref.streamReducer,
+	      connected = _ref$streamReducer.connected,
+	      manyFollowers = _ref$streamReducer.manyFollowers,
 	      audioContextAndGraph = _ref.audioContextProvider.audioContextAndGraph;
 	
 	  if (!connected && !audioContextAndGraph.context) didConnect();
@@ -27470,12 +27474,7 @@
 	    _react2.default.createElement(
 	      "h2",
 	      null,
-	      "Positivity is Low: " + dataReducer.lowPositivity
-	    ),
-	    _react2.default.createElement(
-	      "h2",
-	      null,
-	      audioContextAndGraph.audioNodes.delaySend && "delay send : " + audioContextAndGraph.audioNodes.delaySend.gain.value
+	      "Incoming tweet has many followers: " + manyFollowers
 	    ),
 	    _react2.default.createElement(
 	      "div",
@@ -27543,10 +27542,11 @@
 	
 	
 	// ----------------> ACTION CREATORS <----------------
-	var recieveTweet = exports.recieveTweet = function recieveTweet(tweet) {
+	var recieveTweet = exports.recieveTweet = function recieveTweet(tweet, manyFollowers) {
 	  return {
 	    type: _constants.RECEIVE_TWEET,
-	    tweet: tweet
+	    tweet: tweet,
+	    manyFollowers: manyFollowers
 	  };
 	};
 	
@@ -27596,7 +27596,7 @@
 	  return function (dispatch) {
 	    var peak = followers ? 1.0 : 0.3;
 	    var attack = followers ? ctx.currentTime + 0.01 : ctx.currentTime + 0.15;
-	    dispatch(recieveTweet(tweet));
+	    dispatch(recieveTweet(tweet, followers));
 	    dispatch(countPlace(tweet.place.name));
 	    dispatch(linearRampToValueAtTime(param, peak, attack));
 	    socket.emit('tweetResponse', place, followers);
