@@ -4,7 +4,7 @@ const http = require('http');
 const chalk = require('chalk');
 const express = require('express');
 const socketio = require('socket.io');
-const volleyball = require('volleyball');
+// const volleyball = require('volleyball');
 const bodyParser = require('body-parser');
 const TweetStream = require('node-tweet-stream');
 const watson = require('watson-developer-cloud');
@@ -36,7 +36,7 @@ io.on('connection', socket => {
   // * SEARCH PARAMS TWITTER STREAM TO LISTEN FOR * \\
   // ~-~-~ this location is NYC ~-~-~ \\
   twitter.location('-74,40,-73,41');
-  // twitter.track('fullstack');
+  // twitter.track('synthesizer');
 
   // ------------------> APP EVENT LISTENERS <------------------ \\
   socket.on('didConnect', () => {
@@ -73,7 +73,8 @@ io.on('connection', socket => {
           socket.emit('manhattan', {tweet, manyFollowers});
           break;
         default:
-          console.log(chalk.gray('<-~-~O-~T-~H-~E-~R-*'));
+          // console.log(chalk.gray('<-~-~O-~T-~H-~E-~R-*'));
+          break;
       }
     });
     twitter.on('error', err =>
@@ -84,19 +85,19 @@ io.on('connection', socket => {
   socket.on('tweetResponse', (location, manyFollowers) => {
     switch (location) {
       case 'bronx':
-        console.log(chalk.dim.green('*~B-~R-~O-~N-~X-~-~>'));
+        console.log(chalk.bold.green('*~B-~R-~O-~N-~X-~-~>'));
         socket.emit('bronxResponse', manyFollowers);
         break;
       case 'queens':
-        console.log(chalk.dim.magenta('*~Q-~U-~E-~E-~N-~S-~-~>'));
+        console.log(chalk.bold.magenta('*~Q-~U-~E-~E-~N-~S-~-~>'));
         socket.emit('queensResponse', manyFollowers);
         break;
       case 'brooklyn':
-        console.log(chalk.dim.yellow('*~B-~R-~O-~O-~K-~L-~Y-~N-~-~>'));
+        console.log(chalk.bold.yellow('*~B-~R-~O-~O-~K-~L-~Y-~N-~-~>'));
         socket.emit('brooklynResponse', manyFollowers);
         break;
       case 'manhattan':
-        console.log(chalk.dim.cyan('*~M-~A-~N-~H-~A-~T-~T-~A-~N-~-~>'));
+        console.log(chalk.bold.cyan('*~M-~A-~N-~H-~A-~T-~T-~A-~N-~-~>'));
         socket.emit('manhattanResponse', manyFollowers);
         break;
       default:
@@ -107,7 +108,7 @@ io.on('connection', socket => {
 
 
 // -~-~-~-~-~-~-~-~-~-~-~-~ LOGGING MIDDLEWARE ~-~-~-~-~-~-~-~-~-~-~-~- \\
-app.use(volleyball);
+// app.use(volleyball);
 
 // -~-~-~-~-~-~-~-~-~-~-~-~ SERVE STATIC ASSETS ~-~-~-~-~-~-~-~-~-~-~-~- \\
 app.use(express.static(rootPath));

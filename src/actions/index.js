@@ -54,7 +54,7 @@ export const abort = () => ({
 export const createCtxAndMasterGain = name => dispatch => {
   dispatch(createGlobalAudioContext());
   dispatch(createGain(name));
-  dispatch(setParam(`${name}.gain.value`, 0.7));
+  dispatch(setParam(`${name}.gain.value`, 0.62));
   dispatch(connectAudioNodes(name));
 };
 
@@ -94,14 +94,14 @@ export const analyzeTone = tweet => dispatch => {
 export const togglePositivity = ({isLow, positivity}) => dispatch => {
   let delaySend, feedback, send;
   if (isLow) {
-    send = positivity % 1 > 0.4 ? 0.4 : positivity % 1;
-    delaySend = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+    send = (positivity % 1 > 0.4 ? 0.4 : positivity % 1) / 3;
+    delaySend = (positivity % 1 < 0.62 ? 0.62 : positivity % 1) / 2.1;
     dispatch(setParam('delaySend.gain.value', delaySend));
     dispatch(setParam('feedback.gain.value', 0.05));
     dispatch(setParam('send.gain.value', send));
   } else {
-    send = positivity % 1 < 0.3 ? 0.3 : positivity % 1;
-    feedback = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+    send = (positivity % 1 < 0.3 ? 0.3 : positivity % 1) / 2.1;
+    feedback = (positivity % 1 < 0.62 ? 0.62 : positivity % 1) / 1.3;
     dispatch(setParam('feedback.gain.value', feedback));
     dispatch(setParam('delaySend.gain.value', 0.1));
     dispatch(setParam('send.gain.value', send));

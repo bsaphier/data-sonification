@@ -27238,10 +27238,10 @@
 	      dispatch((0, _actions.createCtxAndMasterGain)('masterGain'));
 	
 	      dispatch(createDynamicsCompressor('compressor'));
-	      dispatch(setParam('compressor.threshold.value', -36));
+	      dispatch(setParam('compressor.threshold.value', -42));
 	      dispatch(setParam('compressor.attack.value', 0.1));
 	      dispatch(setParam('compressor.release.value', 0.6));
-	      dispatch(setParam('compressor.ratio.value', 2));
+	      dispatch(setParam('compressor.ratio.value', 6));
 	      dispatch(setParam('compressor.knee.value', 13));
 	
 	      dispatch(createConvolver('convolver'));
@@ -27277,8 +27277,8 @@
 	        dispatch(connectAudioNodes('convolver', 'masterGain'));
 	
 	        // Bronx OSC
-	        dispatch(setParam('vco1.type', 'triangle'));
-	        dispatch(setParam('vco1.frequency.value', 49));
+	        dispatch(setParam('vco1.type', 'sine'));
+	        dispatch(setParam('vco1.frequency.value', 98));
 	        dispatch(setParam('gain1.gain.value', 0));
 	        dispatch(connectAudioNodes('gain1', 'channelGain'));
 	
@@ -27313,7 +27313,7 @@
 	
 	      socket.on('bronxResponse', function (manyFollowers) {
 	        if (manyFollowers) {
-	          dispatch(setParam('vco1.type', 'sawtooth'));
+	          dispatch(setParam('vco1.type', 'triangle'));
 	          dispatch(setParam('delay.delayTime.value', 0.089));
 	        }
 	        dispatch((0, _actions.noteOff)('gain1.gain', context));
@@ -27334,7 +27334,7 @@
 	      });
 	      socket.on('manhattanResponse', function (manyFollowers) {
 	        if (manyFollowers) {
-	          dispatch(setParam('vco4.type', 'triangle'));
+	          dispatch(setParam('vco4.type', 'sine'));
 	          dispatch(setParam('delay.delayTime.value', 0.034));
 	        }
 	        dispatch((0, _actions.noteOff)('gain4.gain', context));
@@ -27345,7 +27345,7 @@
 	            manyFollowers = _ref3.manyFollowers;
 	
 	        if (!manyFollowers) {
-	          dispatch(setParam('vco1.type', 'triangle'));
+	          dispatch(setParam('vco1.type', 'sine'));
 	          dispatch(setParam('delay.delayTime.value', 0.987));
 	        }
 	        dispatch((0, _actions.noteOn)(manyFollowers, tweet, 'bronx', 'gain1.gain', context, socket));
@@ -27587,7 +27587,7 @@
 	  return function (dispatch) {
 	    dispatch(createGlobalAudioContext());
 	    dispatch(createGain(name));
-	    dispatch(setParam(name + '.gain.value', 0.7));
+	    dispatch(setParam(name + '.gain.value', 0.62));
 	    dispatch(connectAudioNodes(name));
 	  };
 	};
@@ -27639,14 +27639,14 @@
 	        feedback = void 0,
 	        send = void 0;
 	    if (isLow) {
-	      send = positivity % 1 > 0.4 ? 0.4 : positivity % 1;
-	      delaySend = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+	      send = (positivity % 1 > 0.4 ? 0.4 : positivity % 1) / 3;
+	      delaySend = (positivity % 1 < 0.62 ? 0.62 : positivity % 1) / 2.1;
 	      dispatch(setParam('delaySend.gain.value', delaySend));
 	      dispatch(setParam('feedback.gain.value', 0.05));
 	      dispatch(setParam('send.gain.value', send));
 	    } else {
-	      send = positivity % 1 < 0.3 ? 0.3 : positivity % 1;
-	      feedback = positivity % 1 < 0.62 ? 0.62 : positivity % 1;
+	      send = (positivity % 1 < 0.3 ? 0.3 : positivity % 1) / 2.1;
+	      feedback = (positivity % 1 < 0.62 ? 0.62 : positivity % 1) / 1.3;
 	      dispatch(setParam('feedback.gain.value', feedback));
 	      dispatch(setParam('delaySend.gain.value', 0.1));
 	      dispatch(setParam('send.gain.value', send));

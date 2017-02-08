@@ -68,10 +68,10 @@ const mapDispatchToProps = dispatch => {
       dispatch(createCtxAndMasterGain('masterGain'));
 
       dispatch(createDynamicsCompressor('compressor'));
-      dispatch(setParam('compressor.threshold.value', -36));
+      dispatch(setParam('compressor.threshold.value', -42));
       dispatch(setParam('compressor.attack.value', 0.1));
       dispatch(setParam('compressor.release.value', 0.6));
-      dispatch(setParam('compressor.ratio.value', 2));
+      dispatch(setParam('compressor.ratio.value', 6));
       dispatch(setParam('compressor.knee.value', 13));
 
       dispatch(createConvolver('convolver'));
@@ -102,8 +102,8 @@ const mapDispatchToProps = dispatch => {
         dispatch(connectAudioNodes('convolver', 'masterGain'));
 
         // Bronx OSC
-        dispatch(setParam('vco1.type', 'triangle'));
-        dispatch(setParam('vco1.frequency.value', 49));
+        dispatch(setParam('vco1.type', 'sine'));
+        dispatch(setParam('vco1.frequency.value', 98));
         dispatch(setParam('gain1.gain.value', 0));
         dispatch(connectAudioNodes('gain1', 'channelGain'));
 
@@ -136,7 +136,7 @@ const mapDispatchToProps = dispatch => {
 
       socket.on('bronxResponse', manyFollowers => {
         if (manyFollowers) {
-          dispatch(setParam('vco1.type', 'sawtooth'));
+          dispatch(setParam('vco1.type', 'triangle'));
           dispatch(setParam('delay.delayTime.value', 0.089));
         }
         dispatch(noteOff('gain1.gain', context));
@@ -157,7 +157,7 @@ const mapDispatchToProps = dispatch => {
       });
       socket.on('manhattanResponse', manyFollowers => {
         if (manyFollowers) {
-          dispatch(setParam('vco4.type', 'triangle'));
+          dispatch(setParam('vco4.type', 'sine'));
           dispatch(setParam('delay.delayTime.value', 0.034));
         }
         dispatch(noteOff('gain4.gain', context));
@@ -165,7 +165,7 @@ const mapDispatchToProps = dispatch => {
 
       socket.on('bronx', ({ tweet, manyFollowers }) => {
         if (!manyFollowers) {
-          dispatch(setParam('vco1.type', 'triangle'));
+          dispatch(setParam('vco1.type', 'sine'));
           dispatch(setParam('delay.delayTime.value', 0.987));
         }
         dispatch(noteOn(manyFollowers, tweet, 'bronx', 'gain1.gain', context, socket));
