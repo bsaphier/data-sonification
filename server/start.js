@@ -16,12 +16,7 @@ const rootPath = path.join(__dirname, '..');
 const publicPath = path.join(rootPath, 'public');
 const nodeModulesPath = path.join(rootPath, 'node_modules');
 
-const toneAnalyzer = watson.tone_analyzer({
-  username: 'f859bdbb-b933-4c57-a7fa-bd37c1337f6b',
-  password: 'TprhLjXj1pZu',
-  version: 'v3',
-  version_date: '2016-05-19'
-});
+const toneAnalyzer = watson.tone_analyzer(require('../watson.config'));
 
 server.on('request', app);
 app.set('port', (process.env.PORT || 1337));
